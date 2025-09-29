@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import io from 'socket.io-client';
 
@@ -13,18 +13,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Initialize WebSocket connection
-    const newSocket = io('http://localhost:3001'); // Backend URL
+    const newSocket = io('http://localhost:3001');
     setSocket(newSocket);
 
-    // Listen for real-time count updates
     newSocket.on('countUpdated', (data) => {
       if (data.userId === currentUser.uid) {
         setCount(data.count);
       }
     });
 
-    // Listen to Firestore changes for this user's document
     const userDocRef = doc(db, 'userCounts', currentUser.uid);
     
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
@@ -36,7 +33,6 @@ export default function Dashboard() {
       setLoading(false);
     });
 
-    // Cleanup
     return () => {
       unsubscribe();
       newSocket.close();
@@ -50,7 +46,6 @@ export default function Dashboard() {
       const userDocRef = doc(db, 'userCounts', currentUser.uid);
       const newCount = count + 1;
       
-      // Update Firestore
       await setDoc(userDocRef, {
         count: newCount,
         userId: currentUser.uid,
@@ -58,7 +53,6 @@ export default function Dashboard() {
         lastUpdated: new Date().toISOString()
       });
 
-      // Emit to backend for real-time updates and caching
       if (socket) {
         socket.emit('buttonClick', {
           userId: currentUser.uid,
@@ -68,6 +62,48 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('Error updating count:', error);
+    }
+  };
+
+  const handleGPUCompute = async () => {
+    if (!currentUser) return;
+
+    try {
+      console.log('Getting ID token...');
+      const token = await currentUser.getIdToken(true);
+      console.log('Token obtained, calling API...');
+      
+      const response = await fetch('http://localhost:3001/api/compute', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          data: `Computation request from ${currentUser.email}`,
+          parameters: {
+            type: 'matrix_multiplication',
+            matrix_size: 100
+          }
+        })
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        alert(`GPU Computation failed with status ${response.status}. Check console.`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('GPU Computation Result:', result);
+      alert('GPU Computation successful! Check console for details.');
+      
+    } catch (error) {
+      console.error('Error calling GPU service:', error);
+      alert('GPU Computation failed. Check console for details.');
     }
   };
 
@@ -148,7 +184,28 @@ export default function Dashboard() {
           onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
           onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
         >
-          Click Me! 🚀
+          Click Me!
+        </button>
+        
+        <button
+          onClick={handleGPUCompute}
+          style={{
+            padding: '15px 30px',
+            fontSize: '1.1rem',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'transform 0.1s',
+            marginLeft: '10px'
+          }}
+          onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+          onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          Test GPU Compute
         </button>
       </div>
 
@@ -160,7 +217,7 @@ export default function Dashboard() {
         fontSize: '0.9rem',
         color: '#666'
       }}>
-        <p>💡 Your clicks are saved automatically and sync in real-time!</p>
+        <p>Your clicks are saved automatically and sync in real-time!</p>
       </div>
     </div>
   );
