@@ -70,7 +70,7 @@ A full-stack web application with real-time click tracking, distributed across m
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+git clone https://github.com/Orbin-Ahmed/Demo-React-App.git
 cd YOUR_REPO_NAME
 ```
 
@@ -253,10 +253,10 @@ sudo systemctl enable gpu-service
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `REACT_APP_API_URL` | Backend API URL | `https://your-backend.run.app` |
-| `REACT_APP_FIREBASE_API_KEY` | Firebase API Key | From Firebase Console |
-| `REACT_APP_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain | `project.firebaseapp.com` |
-| `REACT_APP_FIREBASE_PROJECT_ID` | Firebase Project ID | `your-project-id` |
+| `REACT_APP_API_URL` | Backend API URL | `https://click-counter-backend-574048910029.us-central1.run.app` |
+| `REACT_APP_FIREBASE_API_KEY` | Firebase API Key | AIzaSyBB4Tw7Nf4kEWgK_cKs8NkxkhGNDj8PHH4 |
+| `REACT_APP_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain | `click-tracker-firebase.firebaseapp.com` |
+| `REACT_APP_FIREBASE_PROJECT_ID` | Firebase Project ID | `click-tracker-firebase` |
 
 ### Backend (.env)
 
@@ -265,9 +265,9 @@ sudo systemctl enable gpu-service
 | `PORT` | Server port | `8080` (Cloud Run) or `3001` (local) |
 | `REDIS_URL` | Redis connection string | `redis://host:6379` |
 | `GPU_SERVICE_URL` | GPU service endpoint | `http://10.128.0.2:8000` |
-| `GPU_SERVICE_TOKEN` | GPU service auth token | `your-secure-token` |
+| `GPU_SERVICE_TOKEN` | GPU service auth token | `eeaeef6bd2a5786475f45bb5703ddef8` |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Firebase Admin key path | `./firebase-admin-key.json` |
-| `CORS_ORIGIN` | Allowed frontend origin | `https://your-app.web.app` |
+| `CORS_ORIGIN` | Allowed frontend origin | `https://click-tracker-firebase.web.app` |
 
 ### GPU Service (.env)
 
@@ -275,7 +275,7 @@ sudo systemctl enable gpu-service
 |----------|-------------|---------|
 | `PORT` | Service port | `8000` |
 | `HOST` | Bind address | `0.0.0.0` |
-| `GPU_SERVICE_TOKEN` | Auth token | Must match backend token |
+| `GPU_SERVICE_TOKEN` | Auth token | AIzaSyBB4Tw7Nf4kEWgK_cKs8NkxkhGNDj8PHH4 |
 | `ENVIRONMENT` | Environment mode | `production` or `development` |
 
 ---
@@ -381,7 +381,6 @@ Apply these rules in Firebase Console → Firestore → Rules.
 ## Known Limitations
 
 - **Redis Caching**: Not implemented in production due to VPC Access Connector setup issues. The app functions correctly using Firestore directly, but lacks the caching layer specified in requirements.
-- **WebSocket Limitations**: Real-time updates work within same session but may not sync across different devices due to lack of Redis pub/sub in production.
 
 ---
 
