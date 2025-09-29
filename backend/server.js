@@ -101,25 +101,38 @@ fastify.post('/api/compute', { preHandler: verifyFirebaseToken }, async (request
 
 const start = async () => {
   try {
-    await redisClient.connect();
+    // Connect to Redis (optional - won't fail if unavailable)
+    if (process.env.REDIS_URL) {
+      try {
+        await redisClient.connect();
+        console.log('✅ Redis connected');
+      } catch (redisError) {
+        console.warn('⚠️ Redis not available, continuing without cache:', redisError.message);
+      }
+    } else {
+      console.log('ℹ️ No Redis URL provided, skipping Redis');
+    }
     
+    // Start Fastify server - IMPORTANT: Use PORT env var for Cloud Run
     const address = await fastify.listen({ 
-      port: process.env.PORT || 3001, 
+      port: process.env.PORT || 8080,  // Changed from 3001 to 8080 for Cloud Run
       host: '0.0.0.0' 
     });
     
-    console.log(`Server running at ${address}`);
+    console.log(`🚀 Server running at ${address}`);
     
+    // Initialize Socket.IO
     const io = new Server(fastify.server, {
       cors: {
-        origin: [process.env.CORS_ORIGIN || "http://localhost:3000"],
+        origin: [process.env.CORS_ORIGIN || "http://localhost:3000", "https://*.web.app", "https://*.firebaseapp.com"],
         methods: ["GET", "POST"],
         credentials: true
       }
     });
     
+    // Socket.IO connection handling
     io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
+      console.log('📱 Client connected:', socket.id);
       
       socket.on('buttonClick', async (data) => {
         try {
@@ -130,11 +143,17 @@ const start = async () => {
             return;
           }
           
-          await redisClient.setUserCount(userId, count);
-        
-          await redisClient.publishCountUpdate(userId, count);
+          // Update Redis only if available
+          if (redisClient.client && redisClient.client.isOpen) {
+            try {
+              await redisClient.setUserCount(userId, count);
+              await redisClient.publishCountUpdate(userId, count);
+            } catch (redisError) {
+              console.warn('Redis operation failed:', redisError.message);
+            }
+          }
           
-          console.log(`Count updated for user ${userId}: ${count}`);
+          console.log(`📊 Count updated for user ${userId}: ${count}`);
         } catch (error) {
           console.error('Error handling button click:', error);
           socket.emit('error', { message: 'Failed to update count' });
@@ -142,29 +161,43 @@ const start = async () => {
       });
       
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        console.log('📱 Client disconnected:', socket.id);
       });
     });
     
-    await redisClient.subscribeToCountUpdates((message) => {
+    // Subscribe to Redis pub/sub only if Redis is available
+    if (redisClient.client && redisClient.client.isOpen) {
       try {
-        const update = JSON.parse(message);
-        io.emit('countUpdated', update);
-        console.log(`Broadcasted count update:`, update);
-      } catch (error) {
-        console.error('Error broadcasting count update:', error);
+        await redisClient.subscribeToCountUpdates((message) => {
+          try {
+            const update = JSON.parse(message);
+            io.emit('countUpdated', update);
+            console.log(`📡 Broadcasted count update:`, update);
+          } catch (error) {
+            console.error('Error broadcasting count update:', error);
+          }
+        });
+      } catch (redisError) {
+        console.warn('Redis subscription failed:', redisError.message);
       }
-    });
+    }
     
+    // Graceful shutdown
     process.on('SIGTERM', async () => {
-      console.log('Received SIGTERM, shutting down gracefully...');
-      await redisClient.disconnect();
+      console.log('🛑 Received SIGTERM, shutting down gracefully...');
+      if (redisClient.client && redisClient.client.isOpen) {
+        try {
+          await redisClient.disconnect();
+        } catch (err) {
+          console.error('Error disconnecting Redis:', err);
+        }
+      }
       await fastify.close();
       process.exit(0);
     });
     
   } catch (err) {
-    console.error('Error starting server:', err);
+    console.error('❌ Error starting server:', err);
     process.exit(1);
   }
 };
