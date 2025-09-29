@@ -13,7 +13,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io(process.env.REACT_APP_API_URL);
     setSocket(newSocket);
 
     newSocket.on('countUpdated', (data) => {
@@ -73,7 +73,7 @@ export default function Dashboard() {
       const token = await currentUser.getIdToken(true);
       console.log('Token obtained, calling API...');
       
-      const response = await fetch('http://localhost:3001/api/compute', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/compute`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

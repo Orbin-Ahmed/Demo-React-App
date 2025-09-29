@@ -19,11 +19,11 @@ compute_engine = GPUComputeEngine()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 GPU Service starting up...")
-    logger.info(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'development')}")
-    logger.info(f"🔑 Token authentication: {'✅ Enabled' if os.getenv('GPU_SERVICE_TOKEN') else '❌ Disabled'}")
+    logger.info("GPU Service starting up...")
+    logger.info(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    logger.info(f"Token authentication: {'Enabled' if os.getenv('GPU_SERVICE_TOKEN') else '❌ Disabled'}")
     yield
-    logger.info("🛑 GPU Service shutting down...")
+    logger.info("GPU Service shutting down...")
 
 app = FastAPI(
     title="GPU Compute Service",
@@ -34,7 +34,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if os.getenv("ENVIRONMENT") == "development" else ["https://your-backend-domain.com"],
+    allow_origins=["*"] if os.getenv("ENVIRONMENT") == "development" else ["https://backend-domain.com"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],

@@ -3,7 +3,7 @@ require('dotenv').config();
 const fastify = require('fastify')({ 
   logger: true,
   cors: {
-    origin: ["http://localhost:3000"],
+    origin: [process.env.CORS_ORIGIN || "http://localhost:3000"],
     credentials: true
   }
 });
@@ -14,7 +14,7 @@ const { db, verifyFirebaseToken } = require('./config/firebase');
 const redisClient = require('./config/redis');
 
 fastify.register(require('@fastify/cors'), {
-  origin: ["http://localhost:3000"],
+  origin: [process.env.CORS_ORIGIN || "http://localhost:3000"],
   credentials: true
 });
 
@@ -112,7 +112,7 @@ const start = async () => {
     
     const io = new Server(fastify.server, {
       cors: {
-        origin: ["http://localhost:3000"],
+        origin: [process.env.CORS_ORIGIN || "http://localhost:3000"],
         methods: ["GET", "POST"],
         credentials: true
       }
